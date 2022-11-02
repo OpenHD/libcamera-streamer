@@ -16,8 +16,8 @@ auto main() -> int
   configuration.Output.Ip = "127.0.0.1";
   configuration.Output.Port = 5600;
 
-  //const auto streamer = std::make_unique<LibcameraStreamer>(configuration);
-  //streamer->Start();
+  const auto streamer = std::make_unique<LibcameraStreamer>(configuration);
+  streamer->Start();
 
   while (true) {
     

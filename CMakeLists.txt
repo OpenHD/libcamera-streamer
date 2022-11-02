@@ -52,8 +52,8 @@ set(sources
 #    source/completed_request.hpp
     src/libcamera_streamer.cpp
     
-#    source/camera_wrapper.hpp
-#    source/camera_wrapper.cpp
+    src/camera_wrapper.hpp
+    src/camera_wrapper.cpp
 
 #    source/stream_info.hpp
 )
