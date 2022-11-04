@@ -43,7 +43,9 @@ void LibcameraStreamer::Start()
 {
     mainStreamerThread_ = std::thread(&LibcameraStreamer::EventLoop, this);
     fromCameraToEncoderThread_ = std::thread(&LibcameraStreamer::CompletedRequestsProcessor, this);
+    fromEncoderToOutputThread_ = std::thread(&LibcameraStreamer::EncodedFramesProcessor, this);
     cameraWrapper_->StartCamera();
+    encoderWrapper_->Start();
 }
 
 using namespace std::placeholders;
@@ -92,5 +94,15 @@ void LibcameraStreamer::CompletedRequestsProcessor() {
         int64_t timestamp_ns = ts ? *ts : buffer->metadata().timestamp;
         // TODO: Положить буффер и request в очередь того, что они заняты
         encoderWrapper_->EncodeBuffer(buffer->planes()[0].fd.get(), bufferMemory.size(), timestamp_ns / 1000);
+    }
+}
+
+void LibcameraStreamer::EncodedFramesProcessor()
+{
+    while (true)
+    {
+        auto nextOutputItem = encoderWrapper_->WaitForNextOutputItem();
+        // TODO: SEND RTP
+        encoderWrapper_->OutputDone(nextOutputItem);
     }
 }

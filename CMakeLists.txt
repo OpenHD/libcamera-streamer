@@ -56,6 +56,7 @@ set(sources
     src/camera_wrapper.cpp
 
     src/stream_info.hpp
+    src/output_item.hpp
 )
 
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${sources})

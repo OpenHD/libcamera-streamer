@@ -6,6 +6,7 @@
 #include <spdlog/spdlog.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <poll.h>
 
 static int xioctl(int fd, unsigned long ctl, void *arg)
 {
@@ -175,6 +176,11 @@ H264Encoder::H264Encoder(EncoderOptions const *options, StreamInfo streamInfo)
 
 H264Encoder::~H264Encoder() {}
 
+void H264Encoder::Start()
+{
+     pollThread_ = std::thread(&H264Encoder::pollEncoder, this);
+}
+
 void H264Encoder::EncodeBuffer(int fd, size_t size, int64_t timestamp_us)
 {
      int index;
@@ -204,6 +210,32 @@ void H264Encoder::EncodeBuffer(int fd, size_t size, int64_t timestamp_us)
      }
 }
 
+OutputItem * H264Encoder::WaitForNextOutputItem()
+{
+     OutputItem *outputItem;
+     outputItemsQueue_.wait_dequeue(outputItem);
+     return outputItem;
+}
+
+void H264Encoder::OutputDone(const OutputItem *outputItem) const
+{
+     v4l2_buffer buf = {};
+     v4l2_plane planes[VIDEO_MAX_PLANES] = {};
+     buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+     buf.memory = V4L2_MEMORY_MMAP;
+     buf.index = outputItem->index;
+     buf.length = 1;
+     buf.m.planes = planes;
+     buf.m.planes[0].bytesused = 0;
+     buf.m.planes[0].length = outputItem->length;
+     if (xioctl(fd_, VIDIOC_QBUF, &buf) < 0)
+     {
+         throw std::runtime_error("failed to re-queue encoded buffer");
+     }
+
+     delete (outputItem);
+}
+
 void H264Encoder::setControlValue(uint32_t id, int32_t value, const std::string &errorText) const
 {
     v4l2_control ctrl{};
@@ -212,5 +244,72 @@ void H264Encoder::setControlValue(uint32_t id, int32_t value, const std::string 
     if (xioctl(fd_, VIDIOC_S_CTRL, &ctrl) < 0)
     {
         throw std::runtime_error(errorText);
+    }
+}
+
+void H264Encoder::pollEncoder()
+{
+    while (true)
+    {
+        pollfd p = {fd_, POLLIN, 0};
+        const int pollResult = poll(&p, 1, 200);
+        
+        if (pollResult == -1)
+        {
+            if (errno == EINTR)
+            {
+                continue;
+            }
+            throw std::runtime_error("unexpected errno " + std::to_string(errno) + " from poll");
+        }
+        if (p.revents & POLLIN)
+        {
+            pollReadyToReuseOutputBuffers();
+            pollReadyToProcessCaptureBuffers();
+        }
+    }
+}
+
+void H264Encoder::pollReadyToReuseOutputBuffers()
+{
+    v4l2_buffer buffer = {};
+    v4l2_plane planes[VIDEO_MAX_PLANES] = {};
+    buffer.type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
+    buffer.memory = V4L2_MEMORY_DMABUF;
+    buffer.length = 1;
+    buffer.m.planes = planes;
+    const int outputRequestResult = xioctl(fd_, VIDIOC_DQBUF, &buffer);
+    if (outputRequestResult == 0)
+    {
+        // Return this to the caller, first noting that this buffer, identified
+        // by its index, is available for queueing up another frame.
+        availableInputBuffers_.enqueue(buffer.index);
+        // TODO: input_done_callback_(nullptr);
+    }
+}
+
+void H264Encoder::pollReadyToProcessCaptureBuffers()
+{
+    v4l2_buffer buffer = {};
+    v4l2_plane planes[VIDEO_MAX_PLANES] = {};
+    buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+    buffer.memory = V4L2_MEMORY_MMAP;
+    buffer.length = 1;
+    buffer.m.planes = planes;
+    const int captureRequestResult = xioctl(fd_, VIDIOC_DQBUF, &buffer);
+    if (captureRequestResult == 0)
+    {
+        // We push this encoded buffer to another thread so that our
+        // application can take its time with the data without blocking the
+        // encode process.
+        int64_t timestamp_us = (buffer.timestamp.tv_sec * (int64_t)1000000) + buffer.timestamp.tv_usec;
+        OutputItem *item = new OutputItem();
+        item->mem = buffers_[buffer.index].mem;
+        item->bytes_used = buffer.m.planes[0].bytesused;
+        item->length = buffer.m.planes[0].length;
+        item->index = buffer.index;
+        item->keyframe = !!(buffer.flags & V4L2_BUF_FLAG_KEYFRAME);
+        item->timestamp_us = timestamp_us;
+        outputItemsQueue_.enqueue(item);
     }
 }

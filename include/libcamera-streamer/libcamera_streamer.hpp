@@ -14,6 +14,7 @@ private:
     StreamerConfiguration configuration_;
     std::thread mainStreamerThread_;
     std::thread fromCameraToEncoderThread_;
+    std::thread fromEncoderToOutputThread_;
 
 public:
     LibcameraStreamer(StreamerConfiguration configuration);
@@ -24,4 +25,5 @@ public:
 private:
     void EventLoop();
     void CompletedRequestsProcessor();
+    void EncodedFramesProcessor();
 };

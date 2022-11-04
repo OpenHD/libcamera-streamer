@@ -1,10 +1,12 @@
 #pragma once
 
 #include <queue>
+#include <thread>
 
 #include "libcamera-streamer/encoder_options.hpp"
 #include "stream_info.hpp"
 #include "readerwriterqueue/readerwriterqueue.h"
+#include "output_item.hpp"
 
 class H264Encoder
 {
@@ -21,14 +23,27 @@ private:
 
     int fd_;
     moodycamel::BlockingReaderWriterQueue<int> availableInputBuffers_;
+    moodycamel::BlockingReaderWriterQueue<OutputItem *> outputItemsQueue_;
     BufferDescription buffers_[CaptureBuffersCount];
+    std::thread pollThread_;
 
 public:
     H264Encoder(EncoderOptions const *options, StreamInfo streamInfo);
     ~H264Encoder();
 
+    void Start();
     void EncodeBuffer(int fd, size_t size, int64_t timestamp_us);
+    OutputItem* WaitForNextOutputItem();
 
 private:
     void setControlValue(uint32_t id, int32_t value, const std::string &errorText) const;
+
+    // This thread just sits waiting for the encoder to finish stuff. It will either:
+    // * receive "output" buffers (codec inputs), which we must return to the caller
+    // * receive encoded buffers, which we pass to the application.
+    void pollEncoder();
+
+    // Getting ready to reuse output(raw frame) buffers
+    void pollReadyToReuseOutputBuffers();
+    void pollReadyToProcessCaptureBuffers();
 };
