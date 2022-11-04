@@ -32,6 +32,7 @@ LibcameraStreamer::LibcameraStreamer(StreamerConfiguration configuration)
     std::string const& cam_id = cameras[0]->id();
 
     cameraWrapper_ = std::make_unique<CameraWrapper>(std::move(cameraManager), cam_id, &configuration_.Camera);
+    auto streamInfo = cameraWrapper_->GetStreamInfo();
     //encoderWrapper_ = std::make_unique<H264Encoder>(&configuration_.Encoder);
     spdlog::trace("LibcameraStreamer streamer created");
 }
@@ -83,9 +84,13 @@ void LibcameraStreamer::EventLoop()
 
 void LibcameraStreamer::CompletedRequestsProcessor() {
     while (true) {
-        auto request = cameraWrapper_->WaitForCompletedRequest();
+        const auto request = cameraWrapper_->WaitForCompletedRequest();
         spdlog::trace("New completed request");
-        //request->buffers().
-        //encoderWrapper_->EncodeBuffer()
+        const auto buffer = cameraWrapper_->GetFrameBufferForRequest(request);
+        libcamera::Span bufferMemory = cameraWrapper_->Mmap(buffer)[0];
+        auto ts = request->metadata().get(libcamera::controls::SensorTimestamp);
+        int64_t timestamp_ns = ts ? *ts : buffer->metadata().timestamp;
+        // TODO: Положить буффер и request в очередь того, что они заняты
+        encoderWrapper_->EncodeBuffer(buffer->planes()[0].fd.get(), bufferMemory.size(), timestamp_ns / 1000);
     }
 }

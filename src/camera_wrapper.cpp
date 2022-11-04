@@ -23,14 +23,9 @@ CameraWrapper::CameraWrapper(
     {
         throw std::runtime_error("failed to acquire camera " + cameraId);
     }
-}
 
-CameraWrapper::~CameraWrapper()
-{
-}
+    spdlog::trace("Camera acquired");
 
-void CameraWrapper::StartCamera()
-{
     spdlog::trace("START Configuring video");
 
     const libcamera::StreamRoles streamRoles = {libcamera::StreamRole::VideoRecording};
@@ -72,15 +67,20 @@ void CameraWrapper::StartCamera()
         throw std::runtime_error("failed to configure streams");
     }
 
-    spdlog::trace("START Frame buffers allocation");
-
     allocateBuffers();
 
     spdlog::trace("END Configuring video");
-
+    
     // This makes all the Request objects that we shall need.
     makeRequests();
+}
 
+CameraWrapper::~CameraWrapper()
+{
+}
+
+void CameraWrapper::StartCamera()
+{
     // Framerate is a bit weird. If it was set programmatically, we go with
     // that, but otherwise it applies only to preview/video modes. For stills
     // capture we set it as long as possible so that we get whatever the
@@ -202,6 +202,34 @@ libcamera::Request *CameraWrapper::WaitForCompletedRequest()
     libcamera::Request *request;
     completedRequestsQueue_.wait_dequeue(request);
     return request;
+}
+
+StreamInfo CameraWrapper::GetStreamInfo()
+{
+    const auto configuration = configuration_->at(0);
+    const StreamInfo streamInfo(
+        configuration.size.width,
+        configuration.size.height,
+        configuration.stride,
+        configuration.colorSpace.value()
+        );
+
+    return streamInfo;
+}
+
+libcamera::FrameBuffer *CameraWrapper::GetFrameBufferForRequest(const libcamera::Request *request) const
+{
+    return request->buffers().at(configuration_->at(0).stream());
+}
+
+std::vector<libcamera::Span<uint8_t>> CameraWrapper::Mmap(libcamera::FrameBuffer *buffer) const
+{
+    const auto item = mapped_buffers_.find(buffer);
+    if (item == mapped_buffers_.end())
+    {
+        return {};
+    }
+    return item->second;
 }
 
 void CameraWrapper::allocateBuffers()

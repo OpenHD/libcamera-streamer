@@ -41,8 +41,8 @@ set(public_headers
 set(sources
     ${public_headers}
     
-#    source/h264_encoder.cpp
-#    source/h264_encoder.hpp
+    src/h264_encoder.cpp
+    src/h264_encoder.hpp
     
 #    source/output/net_output.cpp
 #    source/output/net_output.hpp
@@ -55,7 +55,7 @@ set(sources
     src/camera_wrapper.hpp
     src/camera_wrapper.cpp
 
-#    source/stream_info.hpp
+    src/stream_info.hpp
 )
 
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${sources})
