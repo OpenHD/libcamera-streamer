@@ -31,7 +31,7 @@ public:
     libcamera::Request *WaitForCompletedRequest();
     StreamInfo GetStreamInfo();
     libcamera::FrameBuffer *GetFrameBufferForRequest(const libcamera::Request *request) const;
-    std::vector<libcamera::Span<uint8_t>> CameraWrapper::Mmap(libcamera::FrameBuffer *buffer) const;
+    std::vector<libcamera::Span<uint8_t>> Mmap(libcamera::FrameBuffer *buffer) const;
 
 private:
     void makeRequests();

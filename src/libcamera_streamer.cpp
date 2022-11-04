@@ -33,7 +33,7 @@ LibcameraStreamer::LibcameraStreamer(StreamerConfiguration configuration)
 
     cameraWrapper_ = std::make_unique<CameraWrapper>(std::move(cameraManager), cam_id, &configuration_.Camera);
     auto streamInfo = cameraWrapper_->GetStreamInfo();
-    //encoderWrapper_ = std::make_unique<H264Encoder>(&configuration_.Encoder);
+    encoderWrapper_ = std::make_unique<H264Encoder>(&configuration_.Encoder, streamInfo);
     spdlog::trace("LibcameraStreamer streamer created");
 }
 

@@ -20,7 +20,7 @@ private:
     static constexpr int CaptureBuffersCount = 12;
 
     int fd_;
-    moodycamel::BlockingReaderWriterQueue<int> inputBuffersAvailable_;
+    moodycamel::BlockingReaderWriterQueue<int> availableInputBuffers_;
     BufferDescription buffers_[CaptureBuffersCount];
 
 public:
