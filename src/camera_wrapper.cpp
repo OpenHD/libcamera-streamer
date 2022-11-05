@@ -189,12 +189,15 @@ void CameraWrapper::makeRequests()
 
 void CameraWrapper::requestComplete(libcamera::Request *request)
 {
+    spdlog::trace("CameraWrapper: Request complete");
     if (request->status() == libcamera::Request::RequestCancelled)
     {
         return;
     }
-
-    completedRequestsQueue_.enqueue(request);
+    
+        completedRequestsQueue_.enqueue(request);
+        requestsToReuseQueue_.enqueue(request);
+    
 }
 
 libcamera::Request *CameraWrapper::WaitForCompletedRequest()
@@ -230,6 +233,14 @@ std::vector<libcamera::Span<uint8_t>> CameraWrapper::Mmap(libcamera::FrameBuffer
         return {};
     }
     return item->second;
+}
+
+void CameraWrapper::ReuseRequest()
+{
+    libcamera::Request *request;
+    requestsToReuseQueue_.wait_dequeue(request);
+    request->reuse(libcamera::Request::ReuseBuffers);
+    camera_->queueRequest(request);
 }
 
 void CameraWrapper::allocateBuffers()

@@ -20,7 +20,9 @@ private:
     std::unique_ptr<libcamera::CameraConfiguration> configuration_;
     libcamera::FrameBufferAllocator *allocator_ = nullptr;
 
+    std::mutex queuesAccessMutex_;
     moodycamel::BlockingReaderWriterQueue<libcamera::Request *> completedRequestsQueue_;
+    moodycamel::BlockingReaderWriterQueue<libcamera::Request *> requestsToReuseQueue_;
 
 public:
     CameraWrapper(std::unique_ptr<libcamera::CameraManager> cameraManager, std::string const &cameraId,
@@ -32,6 +34,7 @@ public:
     StreamInfo GetStreamInfo();
     libcamera::FrameBuffer *GetFrameBufferForRequest(const libcamera::Request *request) const;
     std::vector<libcamera::Span<uint8_t>> Mmap(libcamera::FrameBuffer *buffer) const;
+    void ReuseRequest();
 
 private:
     void makeRequests();

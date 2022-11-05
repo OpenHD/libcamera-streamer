@@ -12,7 +12,6 @@ private:
     std::unique_ptr<H264Encoder> encoderWrapper_;
     //std::unique_ptr<libcamera::CameraManager> camera_manager_;
     StreamerConfiguration configuration_;
-    std::thread mainStreamerThread_;
     std::thread fromCameraToEncoderThread_;
     std::thread fromEncoderToOutputThread_;
 
@@ -23,7 +22,7 @@ public:
     void Start();
 
 private:
-    void EventLoop();
-    void CompletedRequestsProcessor();
-    void EncodedFramesProcessor();
+    void completedRequestsProcessor() const;
+    void encodedFramesProcessor() const;
+    void inputBufferProcessedCallback() const;
 };

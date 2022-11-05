@@ -17,6 +17,8 @@ auto main() -> int
     configuration.Output.Port = 5600;
     configuration.Encoder.framerate = 60;
     configuration.Encoder.bitrate = 5000;
+    configuration.Encoder.width = 1280;
+    configuration.Encoder.height = 720;
 
     const auto streamer = std::make_unique<LibcameraStreamer>(configuration);
     streamer->Start();

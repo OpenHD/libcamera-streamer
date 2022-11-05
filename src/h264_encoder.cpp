@@ -34,8 +34,10 @@ static int get_v4l2_colorspace(std::optional<libcamera::ColorSpace> const &cs)
 }
 
 
-H264Encoder::H264Encoder(EncoderOptions const *options, StreamInfo streamInfo)
+H264Encoder::H264Encoder(EncoderOptions const *options, StreamInfo streamInfo,std::function<void(void)> inputBufferProcessedCallback)
 {
+    inputBufferProcessedCallback_ = inputBufferProcessedCallback;
+
     constexpr char deviceName[] = "/dev/video11";
     fd_ = open(deviceName, O_RDWR, 0);
     if (fd_ < 0)
@@ -171,7 +173,7 @@ H264Encoder::H264Encoder(EncoderOptions const *options, StreamInfo streamInfo)
      {
          throw std::runtime_error("failed to start capture streaming");
      }
-     spdlog::trace("Codec streaming started");
+     spdlog::trace("H264Encoder: Codec streaming started");
 }
 
 H264Encoder::~H264Encoder() {}
@@ -183,13 +185,14 @@ void H264Encoder::Start()
 
 void H264Encoder::EncodeBuffer(int fd, size_t size, int64_t timestamp_us)
 {
+     spdlog::trace("H264Encoder: EncodeBuffer {} {} {}", fd, size, timestamp_us);
      int index;
      if(!availableInputBuffers_.try_dequeue(index))
      {
-         spdlog::warn("Frame encoding skipped");
+         spdlog::warn("H264Encoder: Frame encoding skipped");
          return;
      }
-     spdlog::trace("Using {} buffer", index);
+     spdlog::trace("H264Encoder: Using {} buffer", index);
 
      v4l2_buffer buffer = {};
      v4l2_plane planes[VIDEO_MAX_PLANES] = {};
@@ -249,6 +252,7 @@ void H264Encoder::setControlValue(uint32_t id, int32_t value, const std::string 
 
 void H264Encoder::pollEncoder()
 {
+    spdlog::trace("Starting poll thread");
     while (true)
     {
         pollfd p = {fd_, POLLIN, 0};
@@ -281,10 +285,11 @@ void H264Encoder::pollReadyToReuseOutputBuffers()
     const int outputRequestResult = xioctl(fd_, VIDIOC_DQBUF, &buffer);
     if (outputRequestResult == 0)
     {
+        spdlog::trace("Input buffer {} now available", buffer.index);
         // Return this to the caller, first noting that this buffer, identified
         // by its index, is available for queueing up another frame.
         availableInputBuffers_.enqueue(buffer.index);
-        // TODO: input_done_callback_(nullptr);
+        inputBufferProcessedCallback_();
     }
 }
 

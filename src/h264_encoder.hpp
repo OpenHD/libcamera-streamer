@@ -1,7 +1,7 @@
 #pragma once
 
-#include <queue>
 #include <thread>
+#include <functional>
 
 #include "libcamera-streamer/encoder_options.hpp"
 #include "stream_info.hpp"
@@ -26,14 +26,17 @@ private:
     moodycamel::BlockingReaderWriterQueue<OutputItem *> outputItemsQueue_;
     BufferDescription buffers_[CaptureBuffersCount];
     std::thread pollThread_;
+    std::function<void(void)> inputBufferProcessedCallback_;
 
 public:
-    H264Encoder(EncoderOptions const *options, StreamInfo streamInfo);
+    H264Encoder(EncoderOptions const *options, StreamInfo streamInfo,
+                std::function<void(void)> inputBufferProcessedCallback);
     ~H264Encoder();
 
     void Start();
     void EncodeBuffer(int fd, size_t size, int64_t timestamp_us);
     OutputItem* WaitForNextOutputItem();
+    void OutputDone(const OutputItem * outputItem) const;
 
 private:
     void setControlValue(uint32_t id, int32_t value, const std::string &errorText) const;

@@ -33,7 +33,8 @@ LibcameraStreamer::LibcameraStreamer(StreamerConfiguration configuration)
 
     cameraWrapper_ = std::make_unique<CameraWrapper>(std::move(cameraManager), cam_id, &configuration_.Camera);
     auto streamInfo = cameraWrapper_->GetStreamInfo();
-    encoderWrapper_ = std::make_unique<H264Encoder>(&configuration_.Encoder, streamInfo);
+    encoderWrapper_ = std::make_unique<H264Encoder>(&configuration_.Encoder, streamInfo,
+                                                    [=]() -> void { this->inputBufferProcessedCallback(); });
     spdlog::trace("LibcameraStreamer streamer created");
 }
 
@@ -41,9 +42,8 @@ LibcameraStreamer::~LibcameraStreamer() {}
 
 void LibcameraStreamer::Start()
 {
-    mainStreamerThread_ = std::thread(&LibcameraStreamer::EventLoop, this);
-    fromCameraToEncoderThread_ = std::thread(&LibcameraStreamer::CompletedRequestsProcessor, this);
-    fromEncoderToOutputThread_ = std::thread(&LibcameraStreamer::EncodedFramesProcessor, this);
+    fromCameraToEncoderThread_ = std::thread(&LibcameraStreamer::completedRequestsProcessor, this);
+    fromEncoderToOutputThread_ = std::thread(&LibcameraStreamer::encodedFramesProcessor, this);
     cameraWrapper_->StartCamera();
     encoderWrapper_->Start();
 }
@@ -51,53 +51,20 @@ void LibcameraStreamer::Start()
 using namespace std::placeholders;
 
 
-void LibcameraStreamer::EventLoop()
+void LibcameraStreamer::completedRequestsProcessor() const
 {
-    // std::unique_ptr<Output> output =
-    //     std::unique_ptr<Output>(Output::Create(&configuration_.Output));
-    // encoderWrapper_->SetEncodeOutputReadyCallback(
-    //     std::bind(&Output::OutputReady, output.get(), _1, _2, _3, _4));
-    //
-    // encoderWrapper_->OpenCamera();
-    // encoderWrapper_->ConfigureVideo();
-    // encoderWrapper_->StartEncoder();
-    // encoderWrapper_->StartCamera();
-    //
-    //   for (unsigned int count = 0;; count++) {
-    //   LibcameraEncoder::Msg msg = libcameraEncoder_->Wait();
-    //   if (msg.type == LibcameraApp::MsgType::Timeout) {
-    //     // LOG_ERROR("ERROR: Device timeout detected, attempting a restart!!!");
-    //     libcameraEncoder_->StopCamera();
-    //     libcameraEncoder_->StartCamera();
-    //     continue;
-    //   }
-    //   if (msg.type == LibcameraEncoder::MsgType::Quit)
-    //     return;
-    //   else if (msg.type != LibcameraEncoder::MsgType::requestComplete)
-    //     throw std::runtime_error("unrecognised message!");
-    //   
-    //
-    //   CompletedRequestPtr& completed_request =
-    //       std::get<CompletedRequestPtr>(msg.payload);
-    //   libcameraEncoder_->EncodeBuffer(completed_request,
-    //                                   libcameraEncoder_->GetStream());
-    //}
-}
-
-void LibcameraStreamer::CompletedRequestsProcessor() {
     while (true) {
         const auto request = cameraWrapper_->WaitForCompletedRequest();
-        spdlog::trace("New completed request");
+        spdlog::trace("LibcameraStreamer: New completed request");
         const auto buffer = cameraWrapper_->GetFrameBufferForRequest(request);
         libcamera::Span bufferMemory = cameraWrapper_->Mmap(buffer)[0];
         auto ts = request->metadata().get(libcamera::controls::SensorTimestamp);
         int64_t timestamp_ns = ts ? *ts : buffer->metadata().timestamp;
-        // TODO: Положить буффер и request в очередь того, что они заняты
         encoderWrapper_->EncodeBuffer(buffer->planes()[0].fd.get(), bufferMemory.size(), timestamp_ns / 1000);
     }
 }
 
-void LibcameraStreamer::EncodedFramesProcessor()
+void LibcameraStreamer::encodedFramesProcessor() const
 {
     while (true)
     {
@@ -105,4 +72,10 @@ void LibcameraStreamer::EncodedFramesProcessor()
         // TODO: SEND RTP
         encoderWrapper_->OutputDone(nextOutputItem);
     }
+}
+
+void LibcameraStreamer::inputBufferProcessedCallback() const
+{
+    spdlog::trace("Streamer received input done");
+    cameraWrapper_->ReuseRequest();
 }
