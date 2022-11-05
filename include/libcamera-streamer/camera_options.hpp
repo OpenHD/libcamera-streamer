@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CAMERA_OPTIONS_H
+#define CAMERA_OPTIONS_H
 
 #include <fstream>
 #include <iostream>
@@ -102,3 +103,5 @@ enum DenoiseMode
   cdn_fast,
   cdn_hq
 };
+
+#endif

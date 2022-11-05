@@ -1,4 +1,6 @@
-#pragma once
+#ifndef OUTPUT_ITEM_H
+#define OUTPUT_ITEM_H
+
 struct OutputItem
 {
     void *mem;
@@ -8,3 +10,5 @@ struct OutputItem
     bool keyframe;
     int64_t timestamp_us;
 };
+
+#endif

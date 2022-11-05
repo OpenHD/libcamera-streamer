@@ -1,7 +1,8 @@
+#include "libcamera-streamer/libcamera_streamer.hpp"
+
 #include <utility>
 #include "spdlog/spdlog.h"
-
-#include "libcamera-streamer/libcamera_streamer.hpp"
+#include <uvgrtp/lib.hh>
 
 //#include "completed_request.hpp"
 //#include "output/output.hpp"
@@ -35,6 +36,11 @@ LibcameraStreamer::LibcameraStreamer(StreamerConfiguration configuration)
     auto streamInfo = cameraWrapper_->GetStreamInfo();
     encoderWrapper_ = std::make_unique<H264Encoder>(&configuration_.Encoder, streamInfo,
                                                     [=]() -> void { this->inputBufferProcessedCallback(); });
+
+    sess_ = ctx_.create_session(configuration_.Output.Ip);
+    int flags = RCE_SEND_ONLY;
+    stream_ = sess_->create_stream(configuration_.Output.Port, RTP_FORMAT_H264, flags);
+    stream_->configure_ctx(RCC_MTU_SIZE, 1400);
     spdlog::trace("LibcameraStreamer streamer created");
 }
 
@@ -69,7 +75,7 @@ void LibcameraStreamer::encodedFramesProcessor() const
     while (true)
     {
         auto nextOutputItem = encoderWrapper_->WaitForNextOutputItem();
-        // TODO: SEND RTP
+        stream_->push_frame(static_cast<uint8_t *>(nextOutputItem->mem), nextOutputItem->bytes_used, RTP_COPY);
         encoderWrapper_->OutputDone(nextOutputItem);
     }
 }

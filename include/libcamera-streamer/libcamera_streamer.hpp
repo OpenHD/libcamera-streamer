@@ -1,9 +1,13 @@
-#pragma once
+#ifndef LIBCAMERA_STREAMER_H
+#define LIBCAMERA_STREAMER_H
+
 #include <thread>
 
 #include "../../src/h264_encoder.hpp"
 #include "../../src/camera_wrapper.hpp"
 #include "streamer_configuration.hpp"
+#include <uvgrtp/context.hh>
+#include <uvgrtp/media_stream.hh>
 
 class LibcameraStreamer
 {
@@ -14,6 +18,10 @@ private:
     StreamerConfiguration configuration_;
     std::thread fromCameraToEncoderThread_;
     std::thread fromEncoderToOutputThread_;
+
+    uvgrtp::context ctx_;
+    uvgrtp::session *sess_;
+    uvgrtp::media_stream *stream_;
 
 public:
     LibcameraStreamer(StreamerConfiguration configuration);
@@ -26,3 +34,5 @@ private:
     void encodedFramesProcessor() const;
     void inputBufferProcessedCallback() const;
 };
+
+#endif

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef H264_ENCODER_H
+#define H264_ENCODER_H
 
 #include <thread>
 #include <functional>
@@ -50,3 +51,5 @@ private:
     void pollReadyToReuseOutputBuffers();
     void pollReadyToProcessCaptureBuffers();
 };
+
+#endif

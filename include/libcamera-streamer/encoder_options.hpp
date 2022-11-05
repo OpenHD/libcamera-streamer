@@ -1,4 +1,6 @@
-#pragma once
+#ifndef ENCODER_OPTIONS_H
+#define ENCODER_OPTIONS_H
+
 #include <string>
 #include <linux/v4l2-controls.h>
 
@@ -25,4 +27,4 @@ struct EncoderOptions
     bool inline_headers = true;
 };
 
-
+#endif

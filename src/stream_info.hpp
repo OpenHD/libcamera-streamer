@@ -1,4 +1,5 @@
-#pragma once
+#ifndef STREAM_INFO_H
+#define STREAM_INFO_H
 
 #include <optional>
 
@@ -24,3 +25,5 @@ struct StreamInfo
     uint32_t Stride;
     std::optional<libcamera::ColorSpace> ColorSpace;
 };
+
+#endif

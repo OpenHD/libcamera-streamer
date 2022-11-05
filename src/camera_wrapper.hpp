@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CAMERA_WRAPPER_H
+#define CAMERA_WRAPPER_H
 #include <queue>
 #include "readerwriterqueue/readerwriterqueue.h"
 
@@ -20,7 +21,6 @@ private:
     std::unique_ptr<libcamera::CameraConfiguration> configuration_;
     libcamera::FrameBufferAllocator *allocator_ = nullptr;
 
-    std::mutex queuesAccessMutex_;
     moodycamel::BlockingReaderWriterQueue<libcamera::Request *> completedRequestsQueue_;
     moodycamel::BlockingReaderWriterQueue<libcamera::Request *> requestsToReuseQueue_;
 
@@ -41,3 +41,4 @@ private:
     void requestComplete(libcamera::Request *request);
     void allocateBuffers();
 };
+#endif
