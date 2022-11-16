@@ -10,7 +10,7 @@ auto main() -> int
     // used to configure camera and encoder
     const int width=1280;
     const int height=720;
-    const int framerate=60;
+    const int framerate=10;
     /*const int width=640;
     const int height=480;
     const int framerate=90;*/
