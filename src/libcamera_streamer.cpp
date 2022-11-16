@@ -4,6 +4,8 @@
 #include "spdlog/spdlog.h"
 #include <uvgrtp/lib.hh>
 
+#include <chrono>
+
 //#include "completed_request.hpp"
 //#include "output/output.hpp"
 
@@ -56,16 +58,25 @@ void LibcameraStreamer::Start()
 
 using namespace std::placeholders;
 
+static uint64_t getTimeNs(){
+    const auto time=std::chrono::steady_clock::now().time_since_epoch();
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(time).count();
+}
 
+// called when there is a new libcamera raw buffer
 void LibcameraStreamer::completedRequestsProcessor() const
 {
     while (true) {
         const auto request = cameraWrapper_->WaitForCompletedRequest();
         spdlog::trace("LibcameraStreamer: New completed request");
+
         const auto buffer = cameraWrapper_->GetFrameBufferForRequest(request);
         libcamera::Span bufferMemory = cameraWrapper_->Mmap(buffer)[0];
         auto ts = request->metadata().get(libcamera::controls::SensorTimestamp);
         int64_t timestamp_ns = ts ? *ts : buffer->metadata().timestamp;
+        const auto delay_ns=getTimeNs()-timestamp_ns;
+        const float delay_ms=delay_ns / 1000 / 1000.0;
+        spdlog::info("Delay: {} ms",delay_ms);
         encoderWrapper_->EncodeBuffer(buffer->planes()[0].fd.get(), bufferMemory.size(), timestamp_ns / 1000);
     }
 }
@@ -75,6 +86,7 @@ void LibcameraStreamer::encodedFramesProcessor() const
     while (true)
     {
         auto nextOutputItem = encoderWrapper_->WaitForNextOutputItem();
+
         stream_->push_frame(static_cast<uint8_t *>(nextOutputItem->mem), nextOutputItem->bytes_used, RTP_COPY);
         encoderWrapper_->OutputDone(nextOutputItem);
     }
