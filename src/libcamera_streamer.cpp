@@ -62,6 +62,10 @@ static uint64_t getTimeNs(){
     const auto time=std::chrono::steady_clock::now().time_since_epoch();
     return std::chrono::duration_cast<std::chrono::nanoseconds>(time).count();
 }
+static uint64_t __attribute__((unused)) getTimeUs(){
+    const auto time=std::chrono::steady_clock::now().time_since_epoch();
+    return std::chrono::duration_cast<std::chrono::microseconds>(time).count();
+}
 
 // called when there is a new libcamera raw buffer
 void LibcameraStreamer::completedRequestsProcessor() const
@@ -76,8 +80,9 @@ void LibcameraStreamer::completedRequestsProcessor() const
         int64_t timestamp_ns = ts ? *ts : buffer->metadata().timestamp;
         const auto delay_ns=getTimeNs()-timestamp_ns;
         const float delay_ms=delay_ns / 1000 / 1000.0;
-        spdlog::info("Delay: {} ms",delay_ms);
-        encoderWrapper_->EncodeBuffer(buffer->planes()[0].fd.get(), bufferMemory.size(), timestamp_ns / 1000);
+        spdlog::info("Delay camera?: {} ms",delay_ms);
+        // feed current time to measure encode only
+        encoderWrapper_->EncodeBuffer(buffer->planes()[0].fd.get(), bufferMemory.size(), getTimeUs());
     }
 }
 
@@ -86,7 +91,9 @@ void LibcameraStreamer::encodedFramesProcessor() const
     while (true)
     {
         auto nextOutputItem = encoderWrapper_->WaitForNextOutputItem();
-
+        const auto delay_us=getTimeUs()-nextOutputItem->timestamp_us;
+        const float delay_ms=delay_us / 1000.0;
+        spdlog::info("Delay encode: {} ms",delay_ms);
         stream_->push_frame(static_cast<uint8_t *>(nextOutputItem->mem), nextOutputItem->bytes_used, RTP_COPY);
         encoderWrapper_->OutputDone(nextOutputItem);
     }
