@@ -8,9 +8,12 @@ auto main() -> int
 {
     //spdlog::set_level(spdlog::level::trace);
     // used to configure camera and encoder
-    const int width=1280;
+    /*const int width=1280;
     const int height=720;
-    const int framerate=60;
+    const int framerate=60;*/
+    const int width=640;
+    const int height=480;
+    const int framerate=90;
 
     StreamerConfiguration configuration;
     configuration.Camera.width = width;
