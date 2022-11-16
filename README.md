@@ -17,4 +17,6 @@ mkdir build && cd build
 cmake -DDISABLE_CRYPTO=1 ..
 make
 sudo make install
+
+I had to remove WError flag from uvgRTP cmake on rpi
 ```
