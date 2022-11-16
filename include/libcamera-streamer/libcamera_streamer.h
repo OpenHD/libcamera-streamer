@@ -3,11 +3,11 @@
 
 #include <thread>
 
-#include "../../src/h264_encoder.hpp"
-#include "../../src/camera_wrapper.hpp"
-#include "streamer_configuration.hpp"
 #include <uvgrtp/context.hh>
 #include <uvgrtp/media_stream.hh>
+#include "../../src/camera_wrapper.h"
+#include "../../src/h264_encoder.h"
+#include "streamer_configuration.hpp"
 
 class LibcameraStreamer
 {

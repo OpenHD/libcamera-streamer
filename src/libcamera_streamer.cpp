@@ -1,4 +1,4 @@
-#include "libcamera-streamer/libcamera_streamer.hpp"
+#include "libcamera-streamer/libcamera_streamer.h"
 
 #include <utility>
 #include "spdlog/spdlog.h"

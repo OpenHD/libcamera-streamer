@@ -33,7 +33,7 @@ include_directories(${CMAKE_SOURCE_DIR} ${LIBCAMERA_INCLUDE_DIRS})
 set(public_headers
     include/libcamera-streamer/camera_options.hpp
     include/libcamera-streamer/encoder_options.hpp
-    include/libcamera-streamer/libcamera_streamer.hpp
+        include/libcamera-streamer/libcamera_streamer.h
     include/libcamera-streamer/output_options.hpp
     include/libcamera-streamer/streamer_configuration.hpp
 )
@@ -42,7 +42,7 @@ set(sources
     ${public_headers}
     
     src/h264_encoder.cpp
-    src/h264_encoder.hpp
+        src/h264_encoder.h
     
 #    source/output/net_output.cpp
 #    source/output/net_output.hpp
@@ -51,8 +51,8 @@ set(sources
     
 #    source/completed_request.hpp
     src/libcamera_streamer.cpp
-    
-    src/camera_wrapper.hpp
+
+        src/camera_wrapper.h
     src/camera_wrapper.cpp
 
     src/stream_info.hpp

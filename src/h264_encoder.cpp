@@ -1,4 +1,4 @@
-#include "h264_encoder.hpp"
+#include "h264_encoder.h"
 
 #include <fcntl.h>
 #include <stdexcept>

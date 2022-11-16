@@ -1,9 +1,9 @@
 #include <mutex>
 #include <sys/mman.h>
 
-#include "camera_wrapper.hpp"
-#include <stdexcept>
 #include <spdlog/spdlog.h>
+#include <stdexcept>
+#include "camera_wrapper.h"
 
 CameraWrapper::CameraWrapper(
     std::unique_ptr<libcamera::CameraManager> cameraManager,

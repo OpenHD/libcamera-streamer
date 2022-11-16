@@ -1,7 +1,7 @@
 #include <string>
 #include "spdlog/spdlog.h"
 
-#include "libcamera-streamer/libcamera_streamer.hpp"
+#include "libcamera-streamer/libcamera_streamer.h"
 #include "libcamera-streamer/streamer_configuration.hpp"
 
 auto main() -> int
