@@ -24,7 +24,7 @@ private:
     uvgrtp::media_stream *stream_;
 
 public:
-    LibcameraStreamer(StreamerConfiguration configuration);
+    explicit LibcameraStreamer(StreamerConfiguration configuration);
     ~LibcameraStreamer();
 
     void Start();
