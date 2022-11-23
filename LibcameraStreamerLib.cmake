@@ -61,5 +61,5 @@ set_target_properties(libcamera-streamer PROPERTIES
         PUBLIC_HEADER "${public_headers}")
 target_compile_features(libcamera-streamer PUBLIC cxx_std_17)
 
-target_link_libraries(libcamera-streamer PRIVATE atomic)
+target_link_libraries(libcamera-streamer PUBLIC atomic)
 target_link_libraries(libcamera-streamer PUBLIC ${LIBCAMERA_LINK_LIBRARIES} pthread readerwriterqueue fmt uvgrtp)
