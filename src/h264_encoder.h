@@ -35,6 +35,7 @@ public:
     ~H264Encoder();
 
     void Start();
+    void Stop();
     void EncodeBuffer(int fd, size_t size, int64_t timestamp_us);
     OutputItem* WaitForNextOutputItem();
     void OutputDone(const OutputItem * outputItem) const;
@@ -50,6 +51,7 @@ private:
     // Getting ready to reuse output(raw frame) buffers
     void pollReadyToReuseOutputBuffers();
     void pollReadyToProcessCaptureBuffers();
+    bool stop_requested= false;
 };
 
 #endif

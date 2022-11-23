@@ -183,6 +183,14 @@ void H264Encoder::Start()
      pollThread_ = std::thread(&H264Encoder::pollEncoder, this);
 }
 
+void H264Encoder::Stop()
+{
+    stop_requested= true;
+    if(pollThread_.joinable()){
+        pollThread_.join();
+    }
+}
+
 void H264Encoder::EncodeBuffer(int fd, size_t size, int64_t timestamp_us)
 {
      spdlog::trace("H264Encoder: EncodeBuffer {} {} {}", fd, size, timestamp_us);
@@ -253,7 +261,7 @@ void H264Encoder::setControlValue(uint32_t id, int32_t value, const std::string 
 void H264Encoder::pollEncoder()
 {
     spdlog::trace("Starting poll thread");
-    while (true)
+    while (!stop_requested)
     {
         pollfd p = {fd_, POLLIN, 0};
         const int pollResult = poll(&p, 1, 200);

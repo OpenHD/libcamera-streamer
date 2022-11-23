@@ -30,6 +30,7 @@ public:
     ~CameraWrapper();
 
     void StartCamera();
+    void StopCamera();
     libcamera::Request *WaitForCompletedRequest();
     StreamInfo GetStreamInfo();
     libcamera::FrameBuffer *GetFrameBufferForRequest(const libcamera::Request *request) const;

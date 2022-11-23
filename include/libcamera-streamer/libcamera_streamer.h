@@ -22,13 +22,12 @@ private:
     uvgrtp::context ctx_;
     uvgrtp::session *sess_;
     uvgrtp::media_stream *stream_;
+    bool stop_requested=false;
 
 public:
     explicit LibcameraStreamer(StreamerConfiguration configuration);
+
     ~LibcameraStreamer();
-
-    void Start();
-
 private:
     void completedRequestsProcessor() const;
     void encodedFramesProcessor() const;

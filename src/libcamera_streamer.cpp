@@ -43,17 +43,32 @@ LibcameraStreamer::LibcameraStreamer(StreamerConfiguration configuration)
     int flags = RCE_SEND_ONLY;
     stream_ = sess_->create_stream(configuration_.Output.Port, RTP_FORMAT_H264, flags);
     stream_->configure_ctx(RCC_MTU_SIZE, 1400);
-    spdlog::trace("LibcameraStreamer streamer created");
-}
 
-LibcameraStreamer::~LibcameraStreamer() {}
-
-void LibcameraStreamer::Start()
-{
+    stop_requested=false;
     fromCameraToEncoderThread_ = std::thread(&LibcameraStreamer::completedRequestsProcessor, this);
     fromEncoderToOutputThread_ = std::thread(&LibcameraStreamer::encodedFramesProcessor, this);
     cameraWrapper_->StartCamera();
     encoderWrapper_->Start();
+    spdlog::trace("LibcameraStreamer streamer created");
+}
+
+LibcameraStreamer::~LibcameraStreamer() {
+    stop_requested=true;
+    cameraWrapper_->StopCamera();
+    if(fromCameraToEncoderThread_.joinable()){
+        fromCameraToEncoderThread_.join();
+    }
+    if(fromEncoderToOutputThread_.joinable()){
+        fromEncoderToOutputThread_.join();
+    }
+    encoderWrapper_->Stop();
+    if (stream_){
+        sess_->destroy_stream(stream_);
+    }
+    if (sess_){
+        /* Session must be destroyed manually */
+        ctx_.destroy_session(sess_);
+    }
 }
 
 using namespace std::placeholders;
@@ -70,7 +85,7 @@ static uint64_t __attribute__((unused)) getTimeUs(){
 // called when there is a new libcamera raw buffer
 void LibcameraStreamer::completedRequestsProcessor() const
 {
-    while (true) {
+    while (!stop_requested) {
         const auto request = cameraWrapper_->WaitForCompletedRequest();
         spdlog::trace("LibcameraStreamer: New completed request");
 
@@ -88,7 +103,7 @@ void LibcameraStreamer::completedRequestsProcessor() const
 
 void LibcameraStreamer::encodedFramesProcessor() const
 {
-    while (true)
+    while (!stop_requested)
     {
         auto nextOutputItem = encoderWrapper_->WaitForNextOutputItem();
         const auto delay_us=getTimeUs()-nextOutputItem->timestamp_us;

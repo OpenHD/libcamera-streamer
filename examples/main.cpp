@@ -30,10 +30,12 @@ auto main() -> int
     configuration.Encoder.height = height;
 
     const auto streamer = std::make_unique<LibcameraStreamer>(configuration);
-    streamer->Start();
+    //streamer->Start();
 
-    while (true)
+    const auto begin=std::chrono::steady_clock::now();
+    while (std::chrono::steady_clock::now()-begin<std::chrono::seconds(60))
     {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
     return 0;
 }

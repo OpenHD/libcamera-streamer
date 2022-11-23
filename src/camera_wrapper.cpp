@@ -144,6 +144,12 @@ void CameraWrapper::StartCamera()
     }
 }
 
+void CameraWrapper::StopCamera()
+{
+    camera_.reset();
+    cameraManager_->stop();
+}
+
 void CameraWrapper::makeRequests()
 {
     for (libcamera::StreamConfiguration &config : *configuration_)
@@ -282,3 +288,4 @@ void CameraWrapper::allocateBuffers()
 
     spdlog::trace("END Frame buffers allocation");
 }
+
