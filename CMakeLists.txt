@@ -18,3 +18,4 @@ set_property(TARGET libcamera-streamer_exe PROPERTY OUTPUT_NAME libcamera-stream
 target_compile_features(libcamera-streamer_exe PRIVATE cxx_std_17)
 
 target_link_libraries(libcamera-streamer_exe PRIVATE libcamera-streamer::libcamera-streamer)
+target_link_libraries(libcamera-streamer_exe PRIVATE  PUBLIC atomic)
